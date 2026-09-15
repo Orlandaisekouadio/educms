@@ -1,0 +1,72 @@
+services:
+  - type: web
+    name: educms-backend
+    runtime: node
+    rootDir: educms-backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: educms-postgres
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: educms-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: educms-postgres
+          property: databaseName
+      - key: DB_USER
+        fromDatabase:
+          name: educms-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: educms-postgres
+          property: password
+      - key: REDIS_ENABLED
+        value: true
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: educms-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: educms-redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false # set to your deployed frontend URL, e.g. https://educms-frontend.onrender.com
+
+  - type: pserv
+    name: educms-postgres
+    runtime: postgres
+    plan: free
+
+  - type: redis
+    name: educms-redis
+    runtime: redis
+    plan: free
+    ipAllowList: []
+
+  - type: web
+    name: educms-frontend
+    runtime: static
+    rootDir: educms-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false # set to your deployed backend URL + /api, e.g. https://educms-backend.onrender.com/api
