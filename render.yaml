@@ -2,6 +2,7 @@ services:
   - type: web
     name: educms-backend
     runtime: node
+    plan: free
     rootDir: educms-backend
     buildCommand: npm install
     startCommand: npm start
