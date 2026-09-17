@@ -27,16 +27,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
-const limiter = rateLimit({
-  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', limiter);
-
 app.use('/uploads', express.static(path.join(process.cwd(), process.env.UPLOAD_DIR || './uploads')));
 
+// Health check BEFORE rate limiter (Render probes it every few seconds)
 app.get('/api/health', async (req, res) => {
   let pg = 'down';
   try {
@@ -45,6 +38,15 @@ app.get('/api/health', async (req, res) => {
   } catch (e) { pg = `down: ${e.message}`; }
   res.json({ status: 'ok', postgres: pg, version: process.env.API_VERSION || 'v1' });
 });
+
+const limiter = rateLimit({
+  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health',
+});
+app.use('/api/', limiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
