@@ -10,19 +10,17 @@ services:
       - key: NODE_ENV
         value: production
       - key: DB_HOST
-        fromService:
-          type: pserv
+        fromDatabase:
           name: educms-postgres
           property: host
       - key: DB_PORT
-        fromService:
-          type: pserv
+        fromDatabase:
           name: educms-postgres
           property: port
       - key: DB_NAME
         fromDatabase:
           name: educms-postgres
-          property: databaseName
+          property: database
       - key: DB_USER
         fromDatabase:
           name: educms-postgres
@@ -35,12 +33,12 @@ services:
         value: true
       - key: REDIS_HOST
         fromService:
-          type: redis
+          type: keyvalue
           name: educms-redis
           property: host
       - key: REDIS_PORT
         fromService:
-          type: redis
+          type: keyvalue
           name: educms-redis
           property: port
       - key: JWT_SECRET
@@ -50,16 +48,10 @@ services:
       - key: FRONTEND_URL
         sync: false # set to your deployed frontend URL, e.g. https://educms-frontend.onrender.com
 
-  - type: pserv
-    name: educms-postgres
-    runtime: postgres
-    plan: free
-
-  - type: redis
+  - type: keyvalue
     name: educms-redis
-    runtime: redis
     plan: free
-    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
 
   - type: web
     name: educms-frontend
@@ -67,6 +59,14 @@ services:
     rootDir: educms-frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         sync: false # set to your deployed backend URL + /api, e.g. https://educms-backend.onrender.com/api
+
+databases:
+  - name: educms-postgres
+    plan: free
